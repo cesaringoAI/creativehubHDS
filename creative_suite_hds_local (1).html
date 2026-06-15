@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creative Suite HDS</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              serif: ['Georgia', 'serif'],
+              mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+            }
+          }
+        }
+      }
+    </script>
+    <style type="text/tailwindcss">
+      @layer utilities {
+        .animate-in {
+          animation: fadeIn 0.7s ease-out;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      }
+      body {
+        background-color: #F4F4F0;
+      }
+    </style>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for in-browser JSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- JSZip para empaquetado -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <!-- Lucide Icons (Vanilla JS approach for UMD) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect, useRef } = React;
+
+      // Helper to render Lucide icons in React without the lucide-react package
+      // since we are using UMD builds in browser
+      const Icon = ({ name, className }) => {
+        const iconRef = useRef(null);
+        useEffect(() => {
+          if (iconRef.current) {
+            lucide.createIcons({
+              icons: { [name]: lucide.icons[name] },
+              nameAttr: 'data-lucide',
+              attrs: { class: className }
+            });
+          }
+        }, [name, className]);
+        return <i ref={iconRef} data-lucide={name} className={className}></i>;
+      };
+
+      // --- CONSTANTES Y DATOS HDS ---
+      const HDS_NODES = [
+        { id: 'memoria', name: 'Memoria vs. Oficial', icon: <Icon name="BookOpen" className="w-4 h-4" /> },
+        { id: 'margen', name: 'Margen s/ Centro', icon: <Icon name="Map" className="w-4 h-4" /> },
+        { id: 'incomodidad', name: 'Incomodar', icon: <Icon name="AlertTriangle" className="w-4 h-4" /> },
+        { id: 'presente', name: 'Presente Activo', icon: <Icon name="PenTool" className="w-4 h-4" /> },
+        { id: 'trabajo', name: 'Trabajo y Economía', icon: <Icon name="Factory" className="w-4 h-4" /> },
+        { id: 'poder', name: 'Poder y Cuentas', icon: <Icon name="Scale" className="w-4 h-4" /> },
+        { id: 'comunidad', name: 'Comunidad Invisible', icon: <Icon name="Users" className="w-4 h-4" /> },
+        { id: 'ambiente', name: 'Ambiente', icon: <Icon name="Leaf" className="w-4 h-4" /> },
+        { id: 'futuros', name: 'Futuros', icon: <Icon name="Compass" className="w-4 h-4" /> }
+      ];
+
+      // --- FUNCIONES SIMULADAS (MOCKS SIN API) ---
+      
+      const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+      const analyzeContentForIdeas = async (urlOrFile, fileData = null) => {
+        await sleep(2000); // Simulamos tiempo de red
+        return {
+          propuestas: [
+            {
+              tema: "La ciudad fragmentada: Análisis del transporte no oficial",
+              hipotesis: "El documento revela que ante la ausencia del Estado, las periferias han desarrollado sistemas de movilidad que, aunque precarizados, sostienen la economía real de la ciudad."
+            },
+            {
+              tema: "Desarrollo urbano vs. Memoria histórica",
+              hipotesis: "Los datos analizados sugieren un borrado sistemático de los espacios de memoria ciudadana en favor de una narrativa de progreso industrial que excluye a las minorías."
+            }
+          ]
+        };
+      };
+
+      const scanRadarTrends = async () => {
+        await sleep(3500); // Simulamos escaneo de radar
+        return {
+          tendencias: [
+            {
+              tema: "Crisis del agua y privilegios industriales",
+              fecha_ideal: "Semana 1 (Impacto inmediato)",
+              hipotesis: "Mientras los cortes de agua afectan al 60% de las colonias del sur, los megaproyectos industriales continúan con un suministro ininterrumpido y no auditado."
+            },
+            {
+              tema: "La gentrificación del centro histórico",
+              fecha_ideal: "Semana 2 (Desarrollo a fondo)",
+              hipotesis: "El aumento de rentas en el primer cuadro está desplazando comercios centenarios para instalar franquicias que uniforman la estética urbana y matan la identidad local."
+            },
+            {
+              tema: "Desapariciones y el silencio mediático",
+              fecha_ideal: "Semana 3 (Investigación especial)",
+              hipotesis: "Hay un patrón ignorado en la desaparición de jóvenes en zonas industriales que los datos oficiales están clasificando erróneamente como 'ausencias voluntarias'."
+            },
+            {
+              tema: "El colapso de la salud mental post-pandemia",
+              fecha_ideal: "Semana 4 (Cierre de mes)",
+              hipotesis: "El sistema público de salud ha abandonado la atención psiquiátrica, dejando un vacío que están llenando sectas y anexos no regulados operando al margen de la ley."
+            }
+          ]
+        };
+      };
+
+      const transformIdeaToPitch = async (idea, nodes, attempt = 1) => {
+        await sleep(2500); // Simulamos procesamiento
+        return {
+          tesis: attempt > 1 
+            ? `(Reformulación) La noción de "${idea}" es en realidad una tapadera para un problema estructural mucho más grave relacionado con ${nodes}.`
+            : `El concepto de "${idea}", visto a través del lente de [${nodes}], no es un accidente, sino una política de Estado diseñada para mantener el status quo en Saltillo.`,
+          archivo: "Contrastaremos los informes del IMPLAN de la última década con recortes hemerográficos de los años 90 para demostrar la inacción sostenida.",
+          porQueAhora: "Porque el presupuesto estatal de este año está a punto de blindar legalmente las mismas prácticas que originaron esta crisis.",
+          formato: "Crónica inmersiva de 6 cuartillas con mapa interactivo de daños."
+        };
+      };
+
+      const generateInvestigationPlan = async (tesis, attempt = 1) => {
+        await sleep(2000);
+        return {
+          fuentes: [
+            "Dra. Leticia S. (Sociología Urbana, UAdeC)",
+            "Colectivo 'Memoria Viva Coahuila'",
+            "Ex-funcionarios de desarrollo urbano (Off the record)"
+          ],
+          datos: [
+            "Presupuesto ejercido vs presupuestado en el rubro afectado (2015-2025).",
+            "Mapeo de zonas geográficas marginadas por estas políticas."
+          ],
+          testimonios: [
+            "Tres familias directamente afectadas en el sur de la ciudad.",
+            "Un trabajador del sistema que pueda filtrar documentos clave."
+          ],
+          ligas: [
+            "Portal de Transparencia de Coahuila",
+            "Archivos abiertos de organizaciones de Derechos Humanos"
+          ],
+          libros: [
+            "El Derecho a la Ciudad de David Harvey",
+            "Estudios sobre desigualdad en el noreste de México"
+          ],
+          basesDatos: [
+            "Censo INEGI 2020 (microdatos)",
+            "Plataforma Nacional de Transparencia (PNT)"
+          ]
+        };
+      };
+
+      const generateDeepResearch = async (tesis) => {
+        await sleep(4000); // Simulamos búsqueda profunda OSINT
+        return {
+          resumen_hallazgos: "La investigación automatizada arrojó resultados preocupantes. Existen 3 informes gubernamentales que contradicen abiertamente la narrativa oficial que se ha manejado en medios durante los últimos meses. Además, colectivos independientes ya habían advertido de esta situación desde 2021.",
+          recursos: [
+            {
+              titulo: "Informe de Desarrollo Urbano Saltillo 2023",
+              url: "https://ejemplo.com/informe-implan-2023.pdf",
+              tipo: "PDF GUBERNAMENTAL",
+              descripcion: "Documento técnico que detalla la zonificación y los cambios de uso de suelo recientes."
+            },
+            {
+              titulo: "Tesis: Exclusión social en el desarrollo del Noreste",
+              url: "https://repositorio.uadec.mx/tesis_ejemplo_404.pdf",
+              tipo: "ACADÉMICO",
+              descripcion: "Investigación que aporta el marco antropológico necesario para sostener la tesis."
+            },
+            {
+              titulo: "Nota de archivo: Vanguardia MX (2018)",
+              url: "https://vanguardia.com.mx/archivo-2018-ejemplo",
+              tipo: "HEMEROTECA",
+              descripcion: "Reportaje previo que demuestra que las advertencias ciudadanas fueron ignoradas por la administración anterior."
+            }
+          ]
+        };
+      };
+
+      const generateDraftEssay = async (pitch, deepData, styleContext = "") => {
+        await sleep(5000); // Simulación de escritura del borrador largo
+        return {
+          titulo: "El Silencio de Concreto: Radiografía de una Promesa Rota en Saltillo",
+          ensayo: `(Este es un texto simulado generado sin API para pruebas locales). La narrativa oficial nos exige mirar hacia adelante, hacia las chimeneas humeantes y las naves industriales como símbolos indiscutibles de un progreso que no admite réplica. Sin embargo, cuando observamos "${pitch.tesis.substring(0, 50)}...", es evidente que hemos comprado una ilusión a crédito.
+
+El verdadero costo de esta transformación no se mide en metros cuadrados de concreto, sino en las memorias desplazadas. Según los documentos revisados del IMPLAN y contrastados con los testimonios locales, la fractura urbana es intencional. **[FALTA DATO: Porcentaje exacto de áreas verdes perdidas en el centro de Saltillo en la última década]**.
+
+Como se mencionó en investigaciones pasadas **[INSERTAR ENLACE: Reportaje de Vanguardia sobre la sequía de 2018]**, el agua y los recursos rara vez escasean para todos por igual; la precariedad tiene un código postal muy específico. Y es allí donde la antropología urbana nos arroja una luz implacable: la ciudad no está rota, está funcionando exactamente como fue diseñada por quienes lucran con su expansión desmedida.
+
+La administración actual repite los tropos de sus predecesores. Prometen soluciones de vanguardia mientras reciclan políticas de exclusión. Podemos ver claramente esta disparidad en la distribución del presupuesto público. **[INSERTAR EMBED: Gráfico de barras comparando el gasto en puentes vehiculares vs. infraestructura peatonal]**.
+
+Es urgente incomodar al poder con estos datos. No podemos permitir que la inercia del "desarrollo" siga pasando por encima del tejido social. Si el pasado nos ha enseñado algo, es que las cicatrices urbanas de hoy serán los focos de conflicto del mañana. 
+
+Borrador para César escrito por Gemini.`
+        };
+      };
+
+      // --- COMPONENTES UI ---
+
+      function TabButton({ active, onClick, icon, text }) {
+        return (
+          <button 
+            onClick={onClick}
+            className={`flex items-center text-sm md:text-base font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap pb-2 border-b-2 ${active ? 'text-zinc-900 border-zinc-900' : 'text-zinc-400 border-transparent hover:text-zinc-900'}`}
+          >
+            {icon} <span className="ml-3">{text}</span>
+          </button>
+        );
+      }
+
+      function PlanSection({ title, items }) {
+        if (!items || items.length === 0) return null;
+        return (
+          <div>
+            <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-4 border-b border-zinc-700/50 pb-2">
+              {title}
+            </h4>
+            <ul className="space-y-4">
+              {items.map((item, idx) => (
+                <li key={idx} className="text-sm font-serif leading-relaxed text-zinc-300">
+                  <span className="text-orange-500 mr-2 font-sans font-black opacity-50">/</span> {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      }
+
+      function Transformador({ idea, setIdea }) {
+        const [selectedNodes, setSelectedNodes] = useState([]);
+        
+        const [loadingPitch, setLoadingPitch] = useState(false);
+        const [loadingPlan, setLoadingPlan] = useState(false);
+        const [loadingDeep, setLoadingDeep] = useState(false);
+        const [loadingDraft, setLoadingDraft] = useState(false);
+        
+        const [pitch, setPitch] = useState(null);
+        const [plan, setPlan] = useState(null);
+        const [deepData, setDeepData] = useState(null);
+        const [draft, setDraft] = useState(null);
+        const [error, setError] = useState(null);
+        const [copiedDraft, setCopiedDraft] = useState(false);
+        
+        const [styleContext, setStyleContext] = useState("https://drive.google.com/drive/folders/1T8J8cTYR5eoF-OFENaB8D6Sv361gw_0p");
+        
+        const [pitchAttempt, setPitchAttempt] = useState(1);
+        const [planAttempt, setPlanAttempt] = useState(1);
+
+        const toggleNode = (id) => setSelectedNodes(prev => prev.includes(id) ? prev.filter(n => n !== id) : [...prev, id]);
+
+        const executePitch = async (attemptNum = 1) => {
+          if (!idea.trim()) return;
+          setLoadingPitch(true); setError(null);
+          setPlan(null); setDeepData(null); setDraft(null); 
+          setPlanAttempt(1);
+          
+          try {
+            const activeNodesNames = selectedNodes.length > 0 ? HDS_NODES.filter(n => selectedNodes.includes(n.id)).map(n => n.name).join(', ') : 'Incomodidad crítica general'; 
+            const result = await transformIdeaToPitch(idea, activeNodesNames, attemptNum);
+            setPitch(result);
+          } catch (err) {
+            setError(err.status === 401 ? 'Error 401: La sesión expiró. Por favor recarga la página completa.' : 'Error en el modelo de lenguaje. Verifica tu conexión.');
+          } finally { setLoadingPitch(false); }
+        };
+
+        const handleTransform = () => { setPitchAttempt(1); executePitch(1); };
+        const handleRethinkPitch = () => { const newAttempt = pitchAttempt + 1; setPitchAttempt(newAttempt); executePitch(newAttempt); };
+
+        const executePlan = async (attemptNum = 1) => {
+          if (!pitch) return;
+          setLoadingPlan(true); setError(null); setDeepData(null); setDraft(null);
+          try {
+            const result = await generateInvestigationPlan(pitch.tesis, attemptNum);
+            setPlan(result);
+          } catch (err) {
+            setError(err.status === 401 ? 'Error 401: Sesión expirada. Recarga la página.' : 'Error al generar ruta de investigación.'); 
+          } finally { setLoadingPlan(false); }
+        };
+
+        const handleGeneratePlan = () => { setPlanAttempt(1); executePlan(1); };
+        const handleRethinkPlan = () => { const newAttempt = planAttempt + 1; setPlanAttempt(newAttempt); executePlan(newAttempt); };
+
+        const handleDesarrollarOSINT = async () => {
+          if (!pitch) return;
+          setLoadingDeep(true); setError(null); setDraft(null);
+          try {
+            const result = await generateDeepResearch(pitch.tesis);
+            setDeepData(result);
+            setTimeout(() => document.getElementById('osint-panel')?.scrollIntoView({ behavior: 'smooth' }), 300);
+          } catch (err) {
+            setError(err.status === 401 ? 'Error 401: Sesión expirada. Recarga la página.' : 'Error al realizar búsqueda profunda.'); 
+          } finally { setLoadingDeep(false); }
+        };
+
+        const handleGenerateDraft = async () => {
+          if (!pitch || !deepData) return;
+          setLoadingDraft(true); setError(null);
+          try {
+            const result = await generateDraftEssay(pitch, deepData, styleContext);
+            setDraft(result);
+            setTimeout(() => document.getElementById('draft-panel')?.scrollIntoView({ behavior: 'smooth' }), 300);
+          } catch (err) {
+            setError(err.status === 401 ? 'Error 401: Sesión expirada. Recarga la página.' : 'Error al generar el borrador.'); 
+          } finally { setLoadingDraft(false); }
+        };
+
+        const generateDocumentHTML = () => {
+          if (!pitch) return "";
+          let planHtml = plan ? `<h2>1. Fuentes Documentales</h2><ul>${plan.fuentes.map(item => `<li>${item}</li>`).join('')}</ul><h2>2. Datos y Estadísticas</h2><ul>${plan.datos.map(item => `<li>${item}</li>`).join('')}</ul><h2>3. Testimonios</h2><ul>${plan.testimonios.map(item => `<li>${item}</li>`).join('')}</ul><h2>4. Ligas de Consulta</h2><ul>${plan.ligas.map(item => `<li>${item}</li>`).join('')}</ul><h2>5. Libros de Consulta</h2><ul>${plan.libros.map(item => `<li>${item}</li>`).join('')}</ul><h2>6. Bases de Datos</h2><ul>${plan.basesDatos.map(item => `<li>${item}</li>`).join('')}</ul>` : '';
+          return `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head><meta charset="utf-8"><title>HDS - Pitch Editorial</title>
+            <style>
+              body { font-family: 'Montserrat', sans-serif; font-size: 12pt; max-width: 800px; margin: 40px auto; }
+              h1 { font-size: 18pt; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 30px; text-transform: uppercase; }
+              h2 { font-size: 14pt; color: #2563eb; margin-top: 30px; text-transform: uppercase; }
+              p, li { font-size: 12pt; margin-bottom: 15px; }
+              .tesis { font-size: 14pt; font-weight: bold; font-style: italic; border-left: 4px solid #f97316; padding-left: 20px; }
+            </style></head>
+            <body>
+              <h1>Pitch Editorial HDS</h1>
+              <h2>Tesis Central</h2><div class="tesis">"${pitch.tesis}"</div>
+              <h2>Uso del Archivo</h2><p>${pitch.archivo}</p>
+              <h2>Urgencia</h2><p>${pitch.porQueAhora}</p>
+              <h2>Formato Sugerido</h2><p>${pitch.formato}</p>
+              ${planHtml}
+            </body></html>`;
+        };
+
+        const generateDossierHTML = () => {
+          if(!deepData) return "";
+          return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Dossier Digital HDS</title>
+            <style>
+              body { font-family: 'Montserrat', sans-serif; max-width: 900px; margin: 40px auto; background: #fafafa;}
+              h1 { font-size: 24pt; border-bottom: 4px solid #000; }
+              .summary { background: #fff; padding: 20px; border-left: 4px solid #3b82f6; margin-bottom: 40px; }
+              .card { background: #fff; padding: 20px; border: 1px solid #e5e5e5; margin-bottom: 20px; border-radius: 8px;}
+              .card a { color: #2563eb; font-weight: bold; }
+            </style></head>
+            <body><h1>Dossier Digital OSINT</h1>
+              <div class="summary"><strong>Resumen:</strong><br/>${deepData.resumen_hallazgos}</div>
+              <h2>Recursos Encontrados</h2>
+              ${deepData.recursos.map(r => `<div class="card"><strong>[${r.tipo}]</strong> <h3>${r.titulo}</h3><a href="${r.url}">${r.url}</a><p>${r.descripcion}</p></div>`).join('')}
+            </body></html>`;
+        };
+
+        const generateDraftHTML = () => {
+          if(!draft) return "";
+          return `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head><meta charset="utf-8"><title>Borrador Editorial</title>
+            <style>
+              body { font-family: 'Georgia', serif; font-size: 12pt; max-width: 800px; margin: 40px auto; line-height: 1.8; color: #1a1a1a;}
+              h1 { font-size: 22pt; font-family: 'Montserrat', sans-serif; border-bottom: 1px solid #ccc; padding-bottom: 20px; margin-bottom: 40px; text-align: center; text-transform: uppercase;}
+              p { margin-bottom: 20px; text-indent: 20px; }
+              .placeholder { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10pt; font-family: 'Montserrat', sans-serif; font-weight: bold; text-transform: uppercase; margin: 0 4px; }
+              .placeholder-red { color: #dc2626; background-color: #fef2f2; border: 1px solid #fecaca; }
+              .placeholder-blue { color: #2563eb; background-color: #eff6ff; border: 1px solid #bfdbfe; }
+              .placeholder-purple { color: #9333ea; background-color: #faf5ff; border: 1px solid #e9d5ff; }
+              .placeholder-default { color: #52525b; background-color: #fafafa; border: 1px solid #e4e4e7; }
+            </style></head>
+            <body>
+              <h1>${draft.titulo}</h1>
+              ${draft.ensayo.split('\n').filter(p => p.trim() !== '').map(p => {
+                const formattedText = p.replace(/\\*\\*\[(.*?)\]\\*\\*/g, (match, p1) => {
+                  let cssClass = "placeholder-default";
+                  if (p1.includes("FALTA DATO")) cssClass = "placeholder-red";
+                  else if (p1.includes("INSERTAR ENLACE")) cssClass = "placeholder-blue";
+                  else if (p1.includes("INSERTAR EMBED")) cssClass = "placeholder-purple";
+                  return `<span class="placeholder ${cssClass}">[${p1}]</span>`;
+                });
+                return `<p>${formattedText}</p>`;
+              }).join('')}
+            </body></html>`;
+        };
+
+        const handleDownloadZip = async () => {
+          if (!window.JSZip || !deepData) return;
+          try {
+            const zip = new window.JSZip();
+            zip.file("01_Pitch_y_Ruta.doc", generateDocumentHTML());
+            zip.file("02_Dossier_OSINT.html", generateDossierHTML());
+            
+            const fuentesFolder = zip.folder("04_Fuentes_Externas");
+            for (let i = 0; i < deepData.recursos.length; i++) {
+              const r = deepData.recursos[i];
+              if (r.url.toLowerCase().endsWith('.pdf')) {
+                try {
+                  const response = await fetch(r.url, { mode: 'cors' });
+                  if (response.ok) {
+                    const blob = await response.blob();
+                    fuentesFolder.file(`Fuente_${i+1}_${r.titulo.substring(0,20).replace(/[^a-z0-9]/gi, '_')}.pdf`, blob);
+                  } else { throw new Error("HTTP Status NO OK"); }
+                } catch (e) {
+                  fuentesFolder.file(`Fuente_${i+1}_BLOQUEADA.txt`, `El navegador bloqueó la descarga automática por políticas de seguridad (CORS).\n\nDocumento: ${r.titulo}\nEnlace para descargar manualmente: ${r.url}`);
+                }
+              }
+            }
+
+            if (draft) {
+              zip.file("03_Borrador_Editorial.doc", generateDraftHTML());
+              zip.file("03_Borrador_Editorial_Impresion.html", generateDraftHTML()); 
+            }
+            
+            const content = await zip.generateAsync({ type: "blob" });
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url; a.download = `HDS_Investigacion_${new Date().getTime()}.zip`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          } catch (err) { 
+            setError('Error al compilar ZIP.'); 
+          }
+        };
+
+        const handleDownloadDraftDoc = () => {
+          const htmlContent = generateDraftHTML();
+          const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = `HDS_Borrador_${new Date().getTime()}.doc`;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        };
+
+        const handleDownloadDraftPdf = () => {
+          const htmlContent = generateDraftHTML();
+          const printWindow = window.open('', '_blank');
+          printWindow.document.write(htmlContent);
+          printWindow.document.close();
+          printWindow.focus();
+          setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+        };
+
+        const handleCopyDraft = () => {
+          if (!draft) return;
+          const textToCopy = `${draft.titulo}\n\n${draft.ensayo}`;
+          const textArea = document.createElement("textarea");
+          textArea.value = textToCopy;
+          textArea.style.position = "fixed"; textArea.style.left = "-999999px";
+          document.body.appendChild(textArea); textArea.focus(); textArea.select();
+          try {
+            document.execCommand("copy");
+            setCopiedDraft(true);
+            setTimeout(() => setCopiedDraft(false), 2000);
+          } catch (err) {}
+          document.body.removeChild(textArea);
+        };
+
+        return (
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-12 items-start">
+            
+            {/* Columna Izquierda: Input */}
+            <div className="xl:col-span-5 flex flex-col gap-8 relative z-10 xl:sticky xl:top-32">
+              
+              <div className="bg-white border border-zinc-900 p-8 md:p-12 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] transition-transform hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(24,24,27,1)] duration-300">
+                <label className="block text-xs font-black tracking-[0.2em] text-zinc-400 mb-8 uppercase">01 / La Grieta Inicial</label>
+                <textarea 
+                  className="w-full bg-transparent text-3xl md:text-4xl font-serif font-black leading-tight text-zinc-900 placeholder-zinc-300 focus:outline-none resize-none min-h-[160px]"
+                  placeholder="Introduce la idea. Que fluya..." value={idea} onChange={(e) => setIdea(e.target.value)}
+                />
+              </div>
+
+              <div className="bg-white border border-zinc-900 p-8 md:p-12">
+                <label className="block text-xs font-black tracking-[0.2em] text-zinc-400 mb-8 uppercase">02 / Vectores de Deconstrucción</label>
+                <div className="flex flex-wrap gap-3">
+                  {HDS_NODES.map(node => (
+                    <button key={node.id} onClick={() => toggleNode(node.id)} 
+                      className={`flex items-center px-4 py-2 text-xs font-black uppercase tracking-widest border transition-all duration-200 rounded-none ${selectedNodes.includes(node.id) ? 'bg-zinc-900 border-zinc-900 text-white' : 'bg-transparent border-zinc-300 text-zinc-600 hover:border-zinc-900 hover:text-zinc-900'}`}>
+                      {node.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button onClick={handleTransform} disabled={loadingPitch || !idea.trim()} 
+                className="w-full py-8 bg-orange-600 hover:bg-orange-700 active:bg-zinc-900 text-white text-xl font-black uppercase tracking-[0.2em] flex items-center justify-center transition-all duration-300 disabled:bg-zinc-300 disabled:text-zinc-500 rounded-none border border-transparent disabled:border-zinc-300 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] disabled:shadow-none">
+                {loadingPitch ? <><Icon name="Loader2" className="w-6 h-6 mr-4 animate-spin" /> Destilando...</> : <><Icon name="PenTool" className="w-6 h-6 mr-4" /> Exigir Argumento</>}
+              </button>
+
+              {error && <div className="p-6 bg-red-50 border border-red-900 text-red-900 font-bold uppercase tracking-widest text-xs">{error}</div>}
+            </div>
+
+            {/* Columna Derecha: Output Cascada */}
+            <div className="xl:col-span-7 flex flex-col gap-12 z-10">
+              
+              <div className={`border border-zinc-900 p-8 md:p-14 flex flex-col transition-all duration-700 ${pitch ? 'bg-white shadow-[8px_8px_0px_0px_rgba(24,24,27,1)]' : 'bg-transparent min-h-[400px] border-dashed border-zinc-400'}`}>
+                {pitch ? (
+                  <div className="animate-in fade-in duration-700">
+                    <div className="flex justify-between items-start mb-12 border-b border-zinc-200 pb-6">
+                      <h3 className="text-xs font-black text-orange-600 uppercase tracking-[0.3em]">Tesis Central</h3>
+                      <button onClick={handleRethinkPitch} disabled={loadingPitch} className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 hover:text-zinc-900 transition-colors flex items-center">
+                        <Icon name="RefreshCw" className={`w-3 h-3 mr-2 ${loadingPitch ? 'animate-spin' : ''}`} /> Repensar
+                      </button>
+                    </div>
+                    
+                    <p className="text-4xl md:text-6xl font-serif font-black tracking-tighter text-zinc-900 leading-[1.1] mb-16">{pitch.tesis}</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
+                      <div>
+                        <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] mb-4">Archivo</h3>
+                        <p className="text-lg text-zinc-800 font-serif leading-relaxed">{pitch.archivo}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em] mb-4">Urgencia</h3>
+                        <p className="text-lg text-zinc-800 font-serif leading-relaxed">{pitch.porQueAhora}</p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-zinc-200 pt-8 flex justify-between items-center">
+                      <span className="px-4 py-2 bg-zinc-100 text-zinc-900 text-xs font-black uppercase tracking-[0.2em]">{pitch.formato}</span>
+                      {!plan && (
+                        <button onClick={handleGeneratePlan} disabled={loadingPlan} className="flex items-center px-8 py-4 bg-zinc-900 text-white hover:bg-orange-600 text-xs font-black uppercase tracking-[0.2em] transition-colors disabled:opacity-50 rounded-none">
+                          {loadingPlan ? <Icon name="Loader2" className="w-4 h-4 mr-3 animate-spin" /> : "Trazar Ruta"} {!loadingPlan && <Icon name="ArrowRight" className="w-4 h-4 ml-3" />}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-zinc-400 h-full my-auto opacity-70">
+                    <span className="text-[12rem] font-serif font-black tracking-tighter leading-none opacity-10">01</span>
+                    <p className="text-sm font-black uppercase tracking-[0.3em] mt-4">Esperando Input</p>
+                  </div>
+                )}
+              </div>
+
+              {plan && (
+                <div className="bg-zinc-900 text-white border border-zinc-900 p-8 md:p-14 animate-in fade-in duration-700 shadow-[8px_8px_0px_0px_rgba(234,88,12,1)]">
+                  <div className="flex justify-between items-center mb-12 border-b border-zinc-800 pb-6">
+                    <h3 className="text-xs font-black text-orange-500 uppercase tracking-[0.3em]">Insumos Estratégicos</h3>
+                    <button onClick={handleRethinkPlan} disabled={loadingPlan} className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors flex items-center">
+                      <Icon name="RefreshCw" className={`w-3 h-3 mr-2 ${loadingPlan ? 'animate-spin' : ''}`} /> Ajustar Ruta
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
+                    <PlanSection title="Fuentes" items={plan.fuentes} />
+                    <PlanSection title="Datos a Buscar" items={plan.datos} />
+                    <PlanSection title="Testimonios" items={plan.testimonios} />
+                    <PlanSection title="Ligas / Portales" items={plan.ligas} />
+                    <PlanSection title="Libros de Consulta" items={plan.libros} />
+                    <PlanSection title="Bases de Datos" items={plan.basesDatos} />
+                  </div>
+
+                  {!deepData && (
+                    <div className="border-t border-zinc-800 pt-8 flex justify-end">
+                      <button onClick={handleDesarrollarOSINT} disabled={loadingDeep} className="flex items-center px-8 py-4 bg-orange-600 hover:bg-orange-500 text-white text-xs font-black uppercase tracking-[0.2em] transition-colors disabled:opacity-50 rounded-none">
+                        {loadingDeep ? <Icon name="Loader2" className="w-4 h-4 mr-3 animate-spin" /> : <Icon name="Search" className="w-4 h-4 mr-3" />}
+                        Desarrollar OSINT
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {deepData && (
+                <div id="osint-panel" className="bg-zinc-100 border border-zinc-900 p-8 md:p-14 animate-in fade-in duration-700">
+                  <h3 className="text-xs font-black text-zinc-900 uppercase tracking-[0.3em] mb-8 flex items-center border-b border-zinc-300 pb-6">
+                    <Icon name="Search" className="w-4 h-4 mr-3" /> Dossier Web (En Vivo)
+                  </h3>
+                  
+                  <p className="text-xl font-serif text-zinc-800 leading-relaxed mb-12 border-l-4 border-orange-600 pl-6">
+                    {deepData.resumen_hallazgos}
+                  </p>
+
+                  <div className="space-y-6 mb-12 max-h-[500px] overflow-y-auto pr-4">
+                    {deepData.recursos.map((r, i) => (
+                      <div key={i} className="bg-white border border-zinc-300 p-6 hover:border-zinc-900 transition-colors">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-600 mb-3 block">{r.tipo}</span>
+                        <h4 className="font-bold text-lg mb-2 leading-tight text-zinc-900">{r.titulo}</h4>
+                        <a href={r.url} target="_blank" rel="noreferrer" className="text-zinc-500 text-xs font-medium hover:text-zinc-900 hover:underline break-all block mb-4">{r.url}</a>
+                        <p className="text-zinc-700 text-sm font-serif leading-relaxed">{r.descripcion}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {!draft && (
+                    <div className="mb-12 border-t border-zinc-300 pt-8">
+                      <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-900 mb-4 uppercase">
+                        Clonación de Voz (URL o Fragmento de Texto)
+                      </label>
+                      <textarea 
+                        className="w-full bg-white border border-zinc-300 text-sm font-serif text-zinc-700 p-6 focus:outline-none focus:border-orange-600 transition-colors resize-none h-32 rounded-none shadow-inner"
+                        placeholder="Pega aquí un fragmento de tu escritura previa o URLs públicas para que la IA clone tu voz."
+                        value={styleContext}
+                        onChange={(e) => setStyleContext(e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  <div className="border-t border-zinc-300 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <button onClick={handleDownloadZip} className="flex items-center px-6 py-4 bg-white border border-zinc-900 hover:bg-zinc-100 text-zinc-900 text-xs font-black uppercase tracking-[0.2em] transition-colors rounded-none">
+                      <Icon name="FolderArchive" className="w-4 h-4 mr-3" /> Empaquetar ZIP
+                    </button>
+                    
+                    {!draft && (
+                      <button onClick={handleGenerateDraft} disabled={loadingDraft} className="flex items-center px-8 py-4 bg-zinc-900 hover:bg-black text-white text-xs font-black uppercase tracking-[0.2em] transition-colors disabled:opacity-50 rounded-none shadow-[8px_8px_0px_0px_rgba(234,88,12,1)]">
+                        {loadingDraft ? <Icon name="Loader2" className="w-4 h-4 mr-3 animate-spin" /> : <Icon name="Feather" className="w-4 h-4 mr-3" />}
+                        Escribir Borrador
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {draft && (
+                <div id="draft-panel" className="bg-white border border-zinc-900 p-8 md:p-16 animate-in fade-in duration-700 shadow-[12px_12px_0px_0px_rgba(24,24,27,1)]">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-16 border-b border-zinc-200 pb-8 gap-6">
+                    <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.3em] flex items-center">
+                      <Icon name="Feather" className="w-4 h-4 mr-3 text-zinc-900" /> Manuscrito
+                    </h3>
+                    <div className="flex flex-wrap gap-4">
+                      <button onClick={handleCopyDraft} className="flex items-center text-xs font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-zinc-900 transition-colors">
+                        {copiedDraft ? <Icon name="Check" className="w-4 h-4 mr-2 text-green-600" /> : <Icon name="Copy" className="w-4 h-4 mr-2" />}
+                        {copiedDraft ? 'Copiado' : 'Copiar'}
+                      </button>
+                      <button onClick={handleDownloadDraftDoc} className="flex items-center text-xs font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-blue-600 transition-colors">
+                        <Icon name="FileText" className="w-4 h-4 mr-2" /> .DOC
+                      </button>
+                      <button onClick={handleDownloadDraftPdf} className="flex items-center text-xs font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-red-600 transition-colors">
+                        <Icon name="Printer" className="w-4 h-4 mr-2" /> PDF
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <h1 className="text-4xl md:text-6xl font-serif font-black tracking-tighter text-zinc-900 mb-16 leading-[1.1]">
+                    {draft.titulo}
+                  </h1>
+                  
+                  <div className="prose prose-lg prose-zinc max-w-none font-serif leading-loose text-zinc-900">
+                    {draft.ensayo.split('\n').filter(p => p.trim() !== '').map((paragraph, idx) => {
+                      const htmlText = paragraph.replace(/\*\*\[(.*?)\]\*\*/g, (match, p1) => {
+                        let colorClass = "text-zinc-900 bg-zinc-100 border-zinc-300";
+                        if (p1.includes("FALTA DATO")) colorClass = "text-red-700 bg-red-50 border-red-200";
+                        else if (p1.includes("INSERTAR ENLACE")) colorClass = "text-blue-700 bg-blue-50 border-blue-200";
+                        else if (p1.includes("INSERTAR EMBED")) colorClass = "text-purple-700 bg-purple-50 border-purple-200";
+                        return `<strong class="${colorClass} px-2 py-1 border font-sans text-[10px] tracking-[0.2em] uppercase mx-1 align-middle inline-block my-1 rounded-none">[${p1}]</strong>`;
+                      });
+                      return (
+                        <p key={idx} className="mb-8 text-justify" dangerouslySetInnerHTML={{ __html: htmlText }}></p>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        );
+      }
+
+      function Indagar({ setIdea, setActiveTab }) {
+        const [inputType, setInputType] = useState('url'); 
+        const [urlValue, setUrlValue] = useState('');
+        const [selectedFile, setSelectedFile] = useState(null);
+        
+        const [loading, setLoading] = useState(false);
+        const [error, setError] = useState(null);
+        const [proposals, setProposals] = useState([]);
+        
+        const fileInputRef = useRef(null);
+
+        const handleFileChange = (e) => {
+          const file = e.target.files[0];
+          if (file) {
+            if (file.size > 50 * 1024 * 1024) {
+              setError("El archivo supera el límite de 50MB. Intenta con uno más ligero o un enlace web.");
+              return;
+            }
+            setError(null);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const base64String = reader.result.split(',')[1];
+              setSelectedFile({ name: file.name, type: file.type || 'application/pdf', base64: base64String });
+            };
+            reader.readAsDataURL(file);
+          }
+        };
+
+        const handleAnalyze = async () => {
+          if (inputType === 'url' && !urlValue.trim()) return;
+          if (inputType === 'file' && !selectedFile) return;
+          
+          setLoading(true); setError(null); setProposals([]);
+          
+          try {
+            let data;
+            if (inputType === 'url') {
+              data = await analyzeContentForIdeas(urlValue);
+            } else {
+              data = await analyzeContentForIdeas(selectedFile.name, selectedFile);
+            }
+            setProposals(data.propuestas);
+          } catch (err) {
+            setError(err.status === 401 ? 'Error 401: Sesión expirada. Recarga la página.' : "Error al procesar el contenido.");
+          } finally { setLoading(false); }
+        };
+
+        const handleSendToTransformador = (hipotesis) => {
+          setIdea(hipotesis);
+          setActiveTab('transformador');
+        };
+
+        return (
+          <div className="animate-in fade-in duration-700 max-w-4xl mx-auto">
+            <div className="mb-16">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-600 block mb-4">Input & Análisis</span>
+              <h2 className="text-6xl md:text-8xl font-serif font-black tracking-tighter text-zinc-900 mb-6 uppercase">Indagar</h2>
+              <p className="text-xl font-serif text-zinc-600 leading-relaxed">
+                Suministra a la máquina un documento denso o enlace web. Extraeremos los ángulos periodísticos subyacentes.
+              </p>
+            </div>
+
+            <div className="bg-white border border-zinc-900 p-8 md:p-16 mb-16 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)]">
+              <div className="flex mb-12 border-b border-zinc-200">
+                <button onClick={() => { setInputType('url'); setProposals([]); setError(null); }}
+                  className={`px-8 py-4 text-xs font-black uppercase tracking-[0.2em] transition-all border-b-2 ${inputType === 'url' ? 'border-zinc-900 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-900'}`}>
+                  Enlace Web
+                </button>
+                <button onClick={() => { setInputType('file'); setProposals([]); setError(null); }}
+                  className={`px-8 py-4 text-xs font-black uppercase tracking-[0.2em] transition-all border-b-2 ${inputType === 'file' ? 'border-zinc-900 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-900'}`}>
+                  Archivo (PDF/TXT)
+                </button>
+              </div>
+
+              <div className="mb-12">
+                {inputType === 'url' ? (
+                  <div>
+                    <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-400 mb-4 uppercase">URL de origen</label>
+                    <input 
+                      type="url" value={urlValue} onChange={(e) => setUrlValue(e.target.value)}
+                      placeholder="https://ejemplo.com/informe"
+                      className="w-full bg-transparent border-b-2 border-zinc-300 text-2xl md:text-3xl font-serif text-zinc-900 py-4 focus:outline-none focus:border-zinc-900 transition-colors placeholder-zinc-300 rounded-none"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                     <label className="block text-[10px] font-black tracking-[0.2em] text-zinc-400 mb-4 uppercase">Documento fuente</label>
+                     <div onClick={() => fileInputRef.current?.click()}
+                       className="w-full border-2 border-dashed border-zinc-300 p-12 hover:border-zinc-900 hover:bg-zinc-50 transition-colors cursor-pointer flex flex-col items-center justify-center text-zinc-900"
+                     >
+                       <Icon name="Upload" className="w-8 h-8 mb-4 text-zinc-400" />
+                       {selectedFile ? (
+                         <span className="text-xl font-bold font-serif text-center break-all">{selectedFile.name}</span>
+                       ) : (
+                         <span className="text-sm font-black uppercase tracking-widest text-center">Seleccionar archivo (Max: 50MB)</span>
+                       )}
+                     </div>
+                     <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.txt,.doc,.docx" className="hidden" />
+                  </div>
+                )}
+              </div>
+
+              <button onClick={handleAnalyze} disabled={loading || (inputType === 'url' ? !urlValue.trim() : !selectedFile)}
+                className="w-full py-6 bg-zinc-900 hover:bg-orange-600 active:bg-black text-white text-sm font-black uppercase tracking-[0.3em] transition-all duration-300 disabled:bg-zinc-200 disabled:text-zinc-400 rounded-none">
+                {loading ? <><Icon name="Loader2" className="w-5 h-5 inline-block mr-3 animate-spin" /> Analizando...</> : "Exigir Propuestas"}
+              </button>
+
+              {error && <div className="mt-8 p-4 bg-red-50 border border-red-900 text-red-900 font-bold uppercase tracking-widest text-xs">{error}</div>}
+            </div>
+
+            {proposals.length > 0 && (
+              <div className="animate-in fade-in duration-700">
+                <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-8 border-b border-zinc-300 pb-4">
+                  Ángulos Extraídos
+                </h3>
+                <div className="grid grid-cols-1 gap-8">
+                  {proposals.map((prop, idx) => (
+                    <div key={idx} className="bg-white border border-zinc-300 p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-8 hover:border-zinc-900 transition-colors group">
+                      <div className="flex-1">
+                        <div className="flex items-start mb-4">
+                          <span className="text-xl font-serif font-black text-orange-600 mr-4 opacity-50 block mt-1">0{idx + 1}</span>
+                          <h4 className="font-serif font-black text-3xl text-zinc-900 leading-tight group-hover:text-orange-600 transition-colors">
+                            {prop.tema}
+                          </h4>
+                        </div>
+                        <p className="text-lg text-zinc-600 font-serif leading-relaxed pl-9">
+                          {prop.hipotesis}
+                        </p>
+                      </div>
+                      <button onClick={() => handleSendToTransformador(prop.hipotesis)}
+                        className="w-full md:w-auto shrink-0 px-8 py-4 bg-zinc-100 border border-zinc-300 hover:bg-zinc-900 hover:text-white hover:border-zinc-900 text-zinc-900 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-none">
+                        Transformar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      function RadarDatos({ setIdea, setActiveTab }) {
+        const [trends, setTrends] = useState([]);
+        const [loading, setLoading] = useState(false);
+        const [error, setError] = useState(null);
+
+        const loadingPhrases = [
+          "INTERCEPTANDO FRECUENCIAS LOCALES...",
+          "MAPEANDO NODOS DE INCOMODIDAD...",
+          "CRUZANDO DATOS DE LA AGENDA PÚBLICA...",
+          "RASTREANDO SILENCIOS EDITORIALES...",
+          "SINTETIZANDO VECTORES DE FUTURO..."
+        ];
+        const [phraseIndex, setPhraseIndex] = useState(0);
+
+        useEffect(() => {
+          let interval;
+          if (loading) {
+            interval = setInterval(() => {
+              setPhraseIndex((prev) => (prev + 1) % loadingPhrases.length);
+            }, 1800);
+          } else {
+            setPhraseIndex(0);
+          }
+          return () => clearInterval(interval);
+        }, [loading]);
+
+        const handleScan = async () => {
+          setLoading(true); setError(null);
+          try {
+            const data = await scanRadarTrends();
+            setTrends(data.tendencias);
+          } catch (err) {
+            setError(err.status === 401 ? 'Error 401: Sesión expirada. Recarga.' : "Error al conectar con la red.");
+          } finally { setLoading(false); }
+        };
+
+        return (
+          <div className="animate-in fade-in duration-700 max-w-5xl mx-auto">
+            <div className="mb-16 flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-600 block mb-4">Tiempo Real</span>
+                <h2 className="text-6xl md:text-8xl font-serif font-black tracking-tighter text-zinc-900 mb-6 uppercase">Radar</h2>
+                <p className="text-xl font-serif text-zinc-600 leading-relaxed max-w-xl">
+                  Explorador de agenda. Scope proyectado para las próximas 4 semanas.
+                </p>
+              </div>
+              <button onClick={handleScan} disabled={loading} 
+                className="px-8 py-6 bg-zinc-900 hover:bg-orange-600 active:bg-black text-white text-xs font-black uppercase tracking-[0.3em] transition-all disabled:opacity-50 rounded-none shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] disabled:shadow-none">
+                {loading ? "Escaneando..." : "Iniciar Escaneo"}
+              </button>
+            </div>
+
+            {error && <div className="mb-12 p-6 bg-red-50 border border-red-900 text-red-900 font-bold uppercase tracking-widest text-xs">{error}</div>}
+
+            {trends.length === 0 && !loading && !error && (
+              <div className="border border-zinc-300 p-16 flex flex-col items-center justify-center text-center min-h-[400px] bg-white">
+                <Icon name="Activity" className="w-12 h-12 text-zinc-300 mb-6" />
+                <h3 className="font-serif text-3xl font-black text-zinc-400 mb-4 uppercase">Antena Inactiva</h3>
+                <p className="font-serif text-zinc-400 max-w-md">Ejecuta el escaneo para barrer internet y extraer la agenda editorial emergente.</p>
+              </div>
+            )}
+
+            {loading && (
+              <div className="border border-zinc-900 p-12 md:p-16 flex flex-col justify-center min-h-[400px] bg-zinc-900 text-white relative overflow-hidden shadow-[8px_8px_0px_0px_rgba(234,88,12,1)]">
+                <div className="absolute right-8 top-8 text-zinc-800 font-serif text-8xl md:text-[12rem] font-black opacity-30 select-none pointer-events-none leading-none transition-all duration-300">
+                  0{phraseIndex + 1}
+                </div>
+                <Icon name="Radio" className="w-12 h-12 text-orange-600 mb-8 animate-pulse z-10" />
+                <h3 className="font-serif text-4xl md:text-5xl font-black mb-6 uppercase leading-tight z-10">
+                  Escaneando <br/> La Grieta
+                </h3>
+                <div className="border-l-4 border-orange-600 pl-6 mb-12 h-8 flex items-center z-10">
+                  <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.3em] text-zinc-300 font-mono">
+                    {'>'} {loadingPhrases[phraseIndex]} <span className="animate-pulse text-orange-500 text-sm md:text-base">_</span>
+                  </p>
+                </div>
+                <div className="w-full h-1 bg-zinc-800 flex overflow-hidden z-10">
+                  <div className="h-full bg-orange-600 w-1/4 animate-pulse"></div>
+                  <div className="h-full bg-orange-600 w-1/3 animate-[pulse_1.5s_ease-in-out_infinite] ml-auto"></div>
+                </div>
+              </div>
+            )}
+
+            {!loading && trends.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                {trends.map((trend, idx) => (
+                  <div key={idx} className="bg-white border border-zinc-900 p-8 md:p-12 flex flex-col group hover:shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] transition-all duration-300">
+                    <div className="flex justify-between items-start mb-10 border-b border-zinc-200 pb-4">
+                      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">0{idx + 1}</span>
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-600 bg-orange-50 px-3 py-1">{trend.fecha_ideal}</span>
+                    </div>
+                    <h3 className="font-serif font-black text-3xl text-zinc-900 mb-6 leading-tight">{trend.tema}</h3>
+                    <div className="mb-12 flex-grow">
+                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4">Hipótesis</p>
+                      <p className="text-lg text-zinc-700 font-serif leading-relaxed italic border-l-2 border-zinc-300 pl-4">"{trend.hipotesis}"</p>
+                    </div>
+                    <button onClick={() => { setIdea(trend.hipotesis); setActiveTab('transformador'); }} 
+                      className="w-full text-center px-6 py-4 bg-zinc-100 hover:bg-zinc-900 hover:text-white text-zinc-900 text-[10px] font-black uppercase tracking-[0.3em] transition-colors border border-transparent hover:border-zinc-900 rounded-none">
+                      Mandar a Transformador
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      function App() {
+        const [activeTab, setActiveTab] = useState('transformador');
+        const [sharedIdea, setSharedIdea] = useState(''); 
+
+        return (
+          <div className="min-h-screen bg-[#F4F4F0] text-zinc-900 font-sans selection:bg-orange-600 selection:text-white">
+            <header className="pt-20 pb-16 px-6 md:px-16 border-b border-zinc-900 flex flex-col md:flex-row justify-between items-start md:items-end gap-8 bg-[#F4F4F0]">
+              <div>
+                <h1 className="text-6xl md:text-8xl font-serif font-black tracking-tighter uppercase leading-none text-zinc-900">
+                  Creative Suite <br/> HDS<span className="text-orange-600">.</span>
+                </h1>
+                <p className="mt-6 text-xl md:text-2xl font-serif text-zinc-600 italic tracking-tight">
+                  Máquina de ensayo crítico y pensamiento líquido.
+                </p>
+                <div className="mt-8">
+                  <span className="inline-block bg-orange-600 text-white text-[10px] md:text-xs font-black uppercase tracking-[0.3em] px-4 py-2 border border-zinc-900 shadow-[4px_4px_0px_0px_rgba(24,24,27,1)]">
+                    Designed by VANGUARDIA IA LAB / CÉSAR GAYTÁN
+                  </span>
+                </div>
+              </div>
+            </header>
+
+            <nav className="flex gap-12 px-6 md:px-16 py-8 border-b border-zinc-900 overflow-x-auto bg-[#F4F4F0] sticky top-0 z-50">
+              <TabButton active={activeTab === 'transformador'} onClick={() => setActiveTab('transformador')} icon={<Icon name="Sparkles" className="w-4 h-4 mr-3" />} text="Pensar" />
+              <TabButton active={activeTab === 'indagar'} onClick={() => setActiveTab('indagar')} icon={<Icon name="FileSearch" className="w-4 h-4 mr-3" />} text="Indagar" />
+              <TabButton active={activeTab === 'radar'} onClick={() => setActiveTab('radar')} icon={<Icon name="Activity" className="w-4 h-4 mr-3" />} text="Radar" />
+            </nav>
+
+            <main className="max-w-[100rem] mx-auto px-6 md:px-16 py-16">
+              {activeTab === 'transformador' && <Transformador idea={sharedIdea} setIdea={setSharedIdea} />}
+              {activeTab === 'indagar' && <Indagar setIdea={setSharedIdea} setActiveTab={setActiveTab} />}
+              {activeTab === 'radar' && <RadarDatos setIdea={setSharedIdea} setActiveTab={setActiveTab} />}
+            </main>
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+</body>
+</html>
